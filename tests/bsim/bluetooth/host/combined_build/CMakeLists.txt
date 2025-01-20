@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.20.0)
+
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(bsim_test_combined_build)
+
+add_subdirectory(${ZEPHYR_BASE}/tests/bluetooth/common/testlib testlib)
+target_link_libraries(app PRIVATE testlib)
+
+add_subdirectory(${ZEPHYR_BASE}/tests/bsim/babblekit babblekit)
+target_link_libraries(app PRIVATE babblekit)
+
+target_sources(app PRIVATE
+  src/_bsim_main.c
+  src/l2cap_credits/main.c
+  src/l2cap_credits/seg_recv_main.c
+  src/l2cap_ecred/main.c
+  src/l2cap_ecred/dut.c
+  src/l2cap_ecred/peer.c
+  src/l2cap_einprogress/main.c
+  src/l2cap_einprogress/dut.c
+  src/l2cap_einprogress/tester.c
+  src/l2cap_general/ecred_main.c
+  src/l2cap_many_conns/main.c
+  src/l2cap_send_on_connect/main.c
+  )
+
+zephyr_include_directories(
+  ${BSIM_COMPONENTS_PATH}/libUtilv1/src/
+  ${BSIM_COMPONENTS_PATH}/libPhyComv1/src/
+  )
