@@ -252,6 +252,7 @@ int bt_mesh_adv_enable(void)
 int bt_mesh_adv_disable(void)
 {
 	int err;
+	// struct bt_mesh_adv *adv;
 
 	/* k_thread_join will sleep forever if BT_MESH_SUSPENDED flag is not set. The advertiser
 	 * thread will exit once the flag is set. The flag is set by the higher layer function. Here
@@ -260,6 +261,11 @@ int bt_mesh_adv_disable(void)
 	if (!is_mesh_suspended()) {
 		return -EINVAL;
 	}
+
+	// /* Empty the advertising pool */
+	// while ((adv = bt_mesh_adv_get(K_NO_WAIT))) {
+	// 	bt_mesh_adv_unref(adv);
+	// }
 
 	err = k_thread_join(&adv_thread_data, K_FOREVER);
 	LOG_DBG("Advertising disabled: %d", err);
