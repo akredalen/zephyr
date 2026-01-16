@@ -653,8 +653,6 @@ static void local_input_complete(void)
 	}
 }
 
-static bt_mesh_prov_bearer_t active_bearers;
-
 static void prov_link_closed(enum prov_bearer_link_status status)
 {
 	if (IS_ENABLED(CONFIG_BT_MESH_RPR_SRV) &&
@@ -769,7 +767,7 @@ int bt_mesh_prov_enable(bt_mesh_prov_bearer_t bearers)
 
 role_init:
 	bt_mesh_prov_link.role = &role_device;
-	active_bearers |= bearers;
+	bt_mesh_prov_bearers_enable(bearers);
 
 	return 0;
 }
@@ -799,7 +797,7 @@ int bt_mesh_prov_disable(bt_mesh_prov_bearer_t bearers)
 		pb_remote_srv.link_cancel();
 	}
 
-	active_bearers &= ~bearers;
+	bt_mesh_prov_bearers_disable(bearers);
 
 	return 0;
 }

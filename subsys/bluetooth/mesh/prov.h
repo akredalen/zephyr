@@ -155,6 +155,7 @@ struct bt_mesh_prov_link {
 
 extern struct bt_mesh_prov_link bt_mesh_prov_link;
 extern const struct bt_mesh_prov *bt_mesh_prov;
+extern bt_mesh_prov_bearer_t active_bearers;
 
 static inline int bt_mesh_prov_send(struct net_buf_simple *buf,
 				    prov_bearer_send_complete_t cb)
@@ -210,5 +211,10 @@ const struct prov_bearer_cb *bt_mesh_prov_bearer_cb_get(void);
 void bt_mesh_pb_adv_recv(struct net_buf_simple *buf);
 
 int bt_mesh_prov_init(const struct bt_mesh_prov *prov);
+
+int bt_mesh_prov_bearers_suspend(void);
+int bt_mesh_prov_bearers_resume(void);
+void bt_mesh_prov_bearers_enable(bt_mesh_prov_bearer_t bearers);
+void bt_mesh_prov_bearers_disable(bt_mesh_prov_bearer_t bearers);
 
 #endif /* ZEPHYR_SUBSYS_BLUETOOTH_MESH_PROV_H_ */

@@ -552,3 +552,94 @@ int bt_mesh_prov_init(const struct bt_mesh_prov *prov_info)
 
 	return bt_mesh_prov_reset_state();
 }
+
+bt_mesh_prov_bearer_t active_bearers;
+
+void bt_mesh_prov_bearers_enable(bt_mesh_prov_bearer_t bearers)
+{
+	active_bearers |= bearers;
+}
+
+void bt_mesh_prov_bearers_disable(bt_mesh_prov_bearer_t bearers)
+{
+	active_bearers &= ~bearers;
+}
+
+int bt_mesh_prov_bearers_suspend(void)
+{
+	int err;
+
+	/* For provisioner role, don't suspend if already provisioned and no ongoing operations */
+	if (bt_mesh_is_provisioned() && IS_ENABLED(CONFIG_BT_MESH_PROVISIONER)) {
+		/* For provisioned provisioner, check if any provisioning operation is ongoing */
+		if (!bt_mesh_prov_active()) {
+			return 0;
+		}
+	} else if (bt_mesh_is_provisioned()) {
+		/* For provisioned provisionee, nothing to suspend */
+		return 0;
+	}
+
+	if (bt_mesh_prov_active()) {
+		return -EBUSY;
+	}
+
+	/* Suspend provisionee bearers */
+	if (IS_ENABLED(CONFIG_BT_MESH_PB_GATT) &&
+	    (active_bearers & BT_MESH_PROV_GATT)) {
+		err = bt_mesh_pb_gatt_srv_disable();
+		if (err && err != -EALREADY) {
+			LOG_WRN("Disabling PB-GATT failed (err %d)", err);
+			return err;
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_PB_ADV) &&
+	    (active_bearers & BT_MESH_PROV_ADV)) {
+		bt_mesh_pb_adv.link_cancel();
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_RPR_SRV) &&
+	    (active_bearers & BT_MESH_PROV_REMOTE)) {
+		pb_remote_srv.link_cancel();
+	}
+
+	return 0;
+}
+
+int bt_mesh_prov_bearers_resume(void)
+{
+	int err;
+
+	if (bt_mesh_is_provisioned()) {
+		/* For provisioned devices, only re-enable PB-Remote if it was active
+		 * This applies to both provisioner and provisionee roles
+		 */
+		if (IS_ENABLED(CONFIG_BT_MESH_RPR_SRV) &&
+		    (active_bearers & BT_MESH_PROV_REMOTE)) {
+			pb_remote_srv.link_accept(bt_mesh_prov_bearer_cb_get(), NULL);
+		}
+		return 0;
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_PB_GATT) &&
+	    (active_bearers & BT_MESH_PROV_GATT)) {
+		err = bt_mesh_pb_gatt_srv_enable();
+		if (err) {
+			LOG_WRN("Re-enabling PB-GATT failed (err %d)", err);
+			return err;
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_PB_ADV) &&
+	    (active_bearers & BT_MESH_PROV_ADV)) {
+		bt_mesh_pb_adv.link_accept(bt_mesh_prov_bearer_cb_get(), NULL);
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_RPR_SRV) &&
+	    (active_bearers & BT_MESH_PROV_REMOTE)) {
+		pb_remote_srv.link_accept(bt_mesh_prov_bearer_cb_get(), NULL);
+	}
+
+	return 0;
+}
